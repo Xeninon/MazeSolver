@@ -1,5 +1,6 @@
 from tkinter import Tk, BOTH, Canvas
 import time
+import random
 
 class Window():
     def __init__(self, width, height):
@@ -49,6 +50,7 @@ class Cell():
         self._y1 = P1.y
         self._y2 = P2.y
         self._win = win
+        self.visited = False
     
     def draw(self, fill_color):
         left_x = min(self._x1, self._x2)
@@ -87,7 +89,7 @@ class Cell():
         self._win.draw_line(line, color)
 
 class Maze():
-    def __init__(self, x1, y1, num_rows, num_cols, cell_size_x, cell_size_y, win=None):
+    def __init__(self, x1, y1, num_rows, num_cols, cell_size_x, cell_size_y, win=None, seed=None):
         self._x1 = x1
         self._y1 = y1
         self._num_rows = num_rows
@@ -96,10 +98,12 @@ class Maze():
         self._cell_size_y = cell_size_y
         self._win = win
         self._cells = [[] for _ in range(num_cols)]
+        if seed is not None:
+            random.seed(seed)
         self._create_cells()
         self._break_entrance_and_exit()
+        self._break_walls_r(0, 0)
 
-    
     def _create_cells(self):
         for i in range(self._num_cols):
             for j in range(self._num_rows):
@@ -124,3 +128,33 @@ class Maze():
         SE_cell.has_bottom_wall = False
         self._draw_cell(0,0)
         self._draw_cell(self._num_cols - 1, self._num_rows - 1)
+
+    def _break_walls_r(self, i, j):
+        self._cells[i][j].visited = True
+        while True:
+            possible_directions = []
+            if i != 0 and not self._cells[i - 1][j].visited:
+                possible_directions.append(("left", i - 1, j))
+            if i != self._num_cols - 1 and not self._cells[i + 1][j].visited:
+                possible_directions.append(("right", i + 1, j))
+            if j != 0 and not self._cells[i][j - 1].visited:
+                possible_directions.append(("up", i, j - 1))
+            if j != self._num_rows - 1 and not self._cells[i ][j + 1].visited:
+                possible_directions.append(("down", i, j + 1))
+            if len(possible_directions) == 0:
+                self._draw_cell(i, j)
+                return
+            direction, x, y = random.choice(possible_directions)
+            if direction == "up":
+                self._cells[i][j].has_top_wall = False
+                self._cells[x][y].has_bottom_wall = False
+            if direction == "down":
+                self._cells[i][j].has_bottom_wall = False
+                self._cells[x][y].has_top_wall = False
+            if direction == "right":
+                self._cells[i][j].has_right_wall = False
+                self._cells[x][y].has_left_wall = False
+            if direction == "left":
+                self._cells[i][j].has_left_wall = False
+                self._cells[x][y].has_right_wall = False
+            self._break_walls_r(x, y)
