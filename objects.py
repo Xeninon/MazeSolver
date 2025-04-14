@@ -1,4 +1,5 @@
 from tkinter import Tk, BOTH, Canvas
+import time
 
 class Window():
     def __init__(self, width, height):
@@ -38,7 +39,7 @@ class Line():
         canvas.create_line(self.P1.x, self.P1.y, self.P2.x, self.P2.y, fill=fill_color, width=2)
 
 class Cell():
-    def __init__(self, P1, P2, win):
+    def __init__(self, P1, P2, win=None):
         self.has_left_wall = True
         self.has_right_wall = True
         self.has_top_wall = True
@@ -60,12 +61,20 @@ class Cell():
         right_line = Line(Point(right_x, top_y),Point(right_x, bottom_y))
         if self.has_left_wall:
             self._win.draw_line(left_line, fill_color)
+        else:
+            self._win.draw_line(left_line, "#d9d9d9")
         if self.has_right_wall:
             self._win.draw_line(right_line, fill_color)
+        else:
+            self._win.draw_line(right_line, "#d9d9d9")
         if self.has_top_wall:
             self._win.draw_line(top_line, fill_color)
+        else:
+            self._win.draw_line(top_line, "#d9d9d9")
         if self.has_bottom_wall:
             self._win.draw_line(bottom_line, fill_color)
+        else:
+            self._win.draw_line(bottom_line, "#d9d9d9")
 
     def draw_move(self, to_cell, undo=False):
         if undo:
@@ -76,3 +85,42 @@ class Cell():
         P2 = Point((to_cell._x1 + to_cell._x2) // 2, (to_cell._y1 + to_cell._y2) // 2)
         line = Line(P1, P2)
         self._win.draw_line(line, color)
+
+class Maze():
+    def __init__(self, x1, y1, num_rows, num_cols, cell_size_x, cell_size_y, win=None):
+        self._x1 = x1
+        self._y1 = y1
+        self._num_rows = num_rows
+        self._num_cols = num_cols
+        self._cell_size_x = cell_size_x
+        self._cell_size_y = cell_size_y
+        self._win = win
+        self._cells = [[] for _ in range(num_cols)]
+        self._create_cells()
+        self._break_entrance_and_exit()
+
+    
+    def _create_cells(self):
+        for i in range(self._num_cols):
+            for j in range(self._num_rows):
+                P1 = Point(self._x1 + (i * self._cell_size_x), self._y1 + (j * self._cell_size_y))
+                P2 = Point(self._x1 + ((i + 1) * self._cell_size_x), self._y1 + ((j + 1) * self._cell_size_y))
+                self._cells[i].append(Cell(P1, P2, self._win))
+                if self._win is not None:
+                    self._draw_cell(i, j)
+
+    def _draw_cell(self, i, j):
+        self._cells[i][j].draw("black")
+        self._animate()
+
+    def _animate(self):
+        self._win.redraw()
+        time.sleep(0.05)
+
+    def _break_entrance_and_exit(self):
+        NW_cell = self._cells[0][0]
+        SE_cell = self._cells[self._num_cols - 1][self._num_rows - 1]
+        NW_cell.has_top_wall = False
+        SE_cell.has_bottom_wall = False
+        self._draw_cell(0,0)
+        self._draw_cell(self._num_cols - 1, self._num_rows - 1)
